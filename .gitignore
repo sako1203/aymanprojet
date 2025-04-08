@@ -1,0 +1,16 @@
+# Ignorer le jar généré
+Backend/*.jar
+
+# Ignorer les volumes MySQL (base de données)
+mysql_data/
+
+# Ignorer les logs Docker ou app
+*.log
+
+# Frontend React - node_modules et build
+Frontend/node_modules/
+Frontend/build/
+
+# Fichiers systèmes et configs sensibles
+.DS_Store
+.env
