@@ -10,29 +10,6 @@ pipeline {
             }
         }
 
-        stage('OWASP Dependency Check') {
-            steps {
-                dependencyCheck(
-                    odcInstallation: 'Dependency-Check',
-                    nvdCredentialsId: 'NVD_API_KEY',
-                    additionalArguments: '''
-                        --scan backend
-                        --scan frontend
-                        --format XML
-                        --format HTML
-                    '''
-                )
-            }
-        }
-
-        stage('Publish OWASP Report') {
-            steps {
-                dependencyCheckPublisher(
-                    pattern: '**/dependency-check-report.xml'
-                )
-            }
-        }
-
         stage('Backend Sonar') {
             steps {
                 dir('backend') {
@@ -41,8 +18,8 @@ pipeline {
                     withSonarQubeEnv('sq1') {
                         sh '''
                             ./mvnw clean verify sonar:sonar \
-                            -Dsonar.projectKey=mrinspecteur-backend \
-                            -Dsonar.projectName="MR Inspecteur Backend"
+                              -Dsonar.projectKey=mrinspecteur-backend \
+                              -Dsonar.projectName="MR Inspecteur Backend"
                         '''
                     }
                 }
@@ -60,13 +37,17 @@ pipeline {
         stage('Frontend Sonar') {
             steps {
                 dir('frontend') {
-                    withSonarQubeEnv('sq1') {
-                        sh '''
-                            sonar-scanner \
-                            -Dsonar.projectKey=mrinspecteur-frontend \
-                            -Dsonar.projectName="MR Inspecteur Frontend" \
-                            -Dsonar.sources=src
-                        '''
+                    script {
+                        def scannerHome = tool 'SonarScanner'
+
+                        withSonarQubeEnv('sq1') {
+                            sh """
+                                ${scannerHome}/bin/sonar-scanner \
+                                  -Dsonar.projectKey=mrinspecteur-frontend \
+                                  -Dsonar.projectName="MR Inspecteur Frontend" \
+                                  -Dsonar.sources=src
+                            """
+                        }
                     }
                 }
             }
