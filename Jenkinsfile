@@ -1,29 +1,90 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'OpenJDK'
+        nodejs 'node js'
+    }
+
     stages {
-        stage('Clone') {
+
+        stage('Java Version') {
             steps {
-                echo 'Repository cloned successfully'
+                sh 'java -version'
+                sh 'javac -version'
             }
         }
 
-        stage('Build') {
+        stage('OWASP Dependency Check') {
             steps {
-                echo 'Building project...'
+                dependencyCheck(
+                    odcInstallation: 'Dependency-Check',
+                    nvdCredentialsId: 'NVD_API_KEY',
+                    additionalArguments: '''
+                        --scan backend
+                        --scan frontend
+                        --format XML
+                        --format HTML
+                    '''
+                )
             }
         }
 
-        stage('Test') {
+        stage('Publish OWASP Report') {
             steps {
-                echo 'Running tests...'
+                dependencyCheckPublisher(
+                    pattern: '**/dependency-check-report.xml'
+                )
             }
         }
 
-        stage('Finish') {
+        stage('Backend Sonar') {
             steps {
-                echo 'Pipeline completed.'
+                dir('backend') {
+                    sh 'chmod +x mvnw'
+
+                    withSonarQubeEnv('sq1') {
+                        sh '''
+                            ./mvnw clean verify sonar:sonar \
+                              -Dsonar.projectKey=mrinspecteur-backend \
+                              -Dsonar.projectName="MR Inspecteur Backend"
+                        '''
+                    }
+                }
             }
+        }
+
+        stage('Frontend Install') {
+            steps {
+                dir('frontend') {
+                    sh 'npm ci'
+                }
+            }
+        }
+
+        stage('Frontend Sonar') {
+            steps {
+                dir('frontend') {
+                    withSonarQubeEnv('sq1') {
+                        script {
+                            def scannerHome = tool 'SonarScanner'
+
+                            sh """
+                                ${scannerHome}/bin/sonar-scanner \
+                                  -Dsonar.projectKey=mrinspecteur-frontend \
+                                  -Dsonar.projectName="MR Inspecteur Frontend" \
+                                  -Dsonar.sources=src
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
         }
     }
 }
