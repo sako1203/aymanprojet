@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'OpenJDK'
-        nodejs 'node js'
-    }
-
     stages {
 
         stage('Java Version') {
@@ -46,8 +41,8 @@ pipeline {
                     withSonarQubeEnv('sq1') {
                         sh '''
                             ./mvnw clean verify sonar:sonar \
-                              -Dsonar.projectKey=mrinspecteur-backend \
-                              -Dsonar.projectName="MR Inspecteur Backend"
+                            -Dsonar.projectKey=mrinspecteur-backend \
+                            -Dsonar.projectName="MR Inspecteur Backend"
                         '''
                     }
                 }
@@ -57,7 +52,7 @@ pipeline {
         stage('Frontend Install') {
             steps {
                 dir('frontend') {
-                    sh 'npm ci'
+                    sh 'npm install'
                 }
             }
         }
@@ -66,16 +61,12 @@ pipeline {
             steps {
                 dir('frontend') {
                     withSonarQubeEnv('sq1') {
-                        script {
-                            def scannerHome = tool 'SonarScanner'
-
-                            sh """
-                                ${scannerHome}/bin/sonar-scanner \
-                                  -Dsonar.projectKey=mrinspecteur-frontend \
-                                  -Dsonar.projectName="MR Inspecteur Frontend" \
-                                  -Dsonar.sources=src
-                            """
-                        }
+                        sh '''
+                            sonar-scanner \
+                            -Dsonar.projectKey=mrinspecteur-frontend \
+                            -Dsonar.projectName="MR Inspecteur Frontend" \
+                            -Dsonar.sources=src
+                        '''
                     }
                 }
             }
